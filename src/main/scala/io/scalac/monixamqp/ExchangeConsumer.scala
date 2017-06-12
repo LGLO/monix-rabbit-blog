@@ -11,7 +11,8 @@ import monix.reactive.{Consumer, Observer}
 import scala.concurrent.{Future, blocking}
 
 /**
-  * Simple Monix consumer for sending to an Exchange without Publisher Confirms.
+  * Simple Monix consumer for sending to an Exchange without Publisher Confirms
+  * and without Channel recovery.
   *
   * @param connection - Connection used to create Subscribers private channel
   * @param exchange   - exchange name
@@ -58,6 +59,10 @@ class ExchangeConsumer(connection: Connection, exchange: String)
 
 object ExchangeConsumer {
 
+  /**
+    * The simplest way for creating Consumer[OutboundMessage, Unit].
+    * Downside is that it leaves channel open when canceled.
+    */
   def createSimple(
     connection: Connection,
     exchange: String
@@ -84,6 +89,10 @@ object ExchangeConsumer {
       }
     }
 
+  /**
+    * Uses Consumer.create convenience method, that injects cancelable,
+    * which will cancel data producer.
+    */
   def createCancelable(
     connection: Connection,
     exchange: String
