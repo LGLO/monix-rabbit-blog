@@ -123,6 +123,7 @@ object ExchangeConsumer {
           cb.onSuccess(())
         }
 
+        //Checks if is open to mitigate risk of killing connection
         private def abort(): Unit = if (ch.isOpen) ch.abort()
       }
     }
