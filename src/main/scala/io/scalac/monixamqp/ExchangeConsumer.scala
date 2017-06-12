@@ -84,4 +84,37 @@ object ExchangeConsumer {
       }
     }
 
+  def createCancelable(
+    connection: Connection,
+    exchange: String
+  ): Consumer[OutboundMessage, Unit] =
+    Consumer.create { (s, cancelable, cb) =>
+      new Observer[OutboundMessage] {
+        val ch = connection.createChannel()
+        val properties = new AMQP.BasicProperties()
+
+        connection.addShutdownListener(_ => cancelable.cancel())
+
+        def publish(m: OutboundMessage) =
+          ch.basicPublish(exchange, m.routingKey, properties, m.body)
+
+        def onNext(m: OutboundMessage): Future[Ack] =
+          Future {
+            blocking(publish(m))
+            Continue
+          }(s)
+
+        override def onError(ex: Throwable): Unit = {
+          abort()
+          cb.onError(ex)
+        }
+
+        override def onComplete(): Unit = {
+          abort()
+          cb.onSuccess(())
+        }
+
+        private def abort(): Unit = if (ch.isOpen) ch.abort()
+      }
+    }
 }
